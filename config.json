@@ -25,20 +25,7 @@
                                           ],
                          "response_probability":  100
                      },
-    "listen_list":  [
-                        {
-                            "nickname":  "Zachary",
-                            "prompt":  "default"
-                        },
-                        {
-                            "nickname":  "吃个屁",
-                            "prompt":  "default"
-                        },
-                        {
-                            "nickname":  "薇大狗嘞",
-                            "prompt":  "default"
-                        }
-                    ],
+    "listen_list":  [],
     "llm":  {
                 "api_key":  "",
                 "base_url":  "https://api.deepseek.com/v1",
