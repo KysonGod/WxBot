@@ -1,0 +1,84 @@
+﻿{
+    "assistant_llm":  {
+                          "api_key":  "",
+                          "base_url":  "",
+                          "max_tokens":  1200,
+                          "model":  "",
+                          "provider":  "deepseek",
+                          "temperature":  0.7,
+                          "timeout_seconds":  45
+                      },
+    "emoji":  {
+                  "dir":  "emojis",
+                  "enabled":  true,
+                  "send_probability":  25
+              },
+    "enable_text_commands":  true,
+    "group_policy":  {
+                         "accept_all":  false,
+                         "enable_at_reply":  true,
+                         "enable_keyword_reply":  true,
+                         "keyword_list":  [
+                                              "你好",
+                                              "机器人",
+                                              "在吗"
+                                          ],
+                         "response_probability":  100
+                     },
+    "listen_list":  [
+                        {
+                            "nickname":  "Zachary",
+                            "prompt":  "default"
+                        },
+                        {
+                            "nickname":  "吃个屁",
+                            "prompt":  "default"
+                        },
+                        {
+                            "nickname":  "薇大狗嘞",
+                            "prompt":  "default"
+                        }
+                    ],
+    "llm":  {
+                "api_key":  "",
+                "base_url":  "https://api.deepseek.com/v1",
+                "max_tokens":  2000,
+                "model":  "deepseek-chat",
+                "provider":  "deepseek",
+                "temperature":  1,
+                "timeout_seconds":  45
+            },
+    "max_groups":  5,
+    "online":  {
+                   "detection_prompt":  "是否需要查询今天的天气、最新新闻、股价、实时事件、当前网站内容等外部实时信息",
+                   "enabled":  true,
+                   "fixed_prompt":  "当需要时请使用联网搜索能力，优先返回最新且可核验的信息。"
+               },
+    "online_llm":  {
+                       "api_key":  "",
+                       "base_url":  "https://api.moonshot.cn/v1",
+                       "max_tokens":  1500,
+                       "model":  "kimi-k2-0905-preview",
+                       "provider":  "moonshot",
+                       "temperature":  0.7,
+                       "timeout_seconds":  45
+                   },
+    "port":  8848,
+    "queue_max_messages_per_user":  40,
+    "queue_waiting_time":  7,
+    "queue_worker_concurrency":  4,
+    "vision":  {
+                   "emoji_prompt":  "请用中文简洁描述该表情包表达的情绪或含义。",
+                   "enabled":  true,
+                   "image_prompt":  "请用中文描述这张图片的主要内容。直接描述，不要说“这是…”。"
+               },
+    "vision_llm":  {
+                       "api_key":  "",
+                       "base_url":  "https://open.bigmodel.cn/api/paas/v4",
+                       "max_tokens":  500,
+                       "model":  "glm-4.6v",
+                       "provider":  "zhipu",
+                       "temperature":  0.2,
+                       "timeout_seconds":  45
+                   }
+}

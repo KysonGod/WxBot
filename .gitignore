@@ -1,0 +1,7 @@
+state/*.json
+!state/.gitkeep
+config.local.json
+config.local.*.json
+.gocache/
+.idea/
+dist/*.exe

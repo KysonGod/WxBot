@@ -1,0 +1,14 @@
+{
+  "llm": {
+    "api_key": "env:MAIN_LLM_API_KEY"
+  },
+  "assistant_llm": {
+    "api_key": "env:ASSISTANT_LLM_API_KEY"
+  },
+  "vision_llm": {
+    "api_key": "env:VISION_LLM_API_KEY"
+  },
+  "online_llm": {
+    "api_key": "env:ONLINE_LLM_API_KEY"
+  }
+}

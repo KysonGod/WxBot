@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WxBot 配置中心</title>
+  <style>
+    :root {
+      --bg: #f6f8f4;
+      --panel: #ffffff;
+      --ink: #1f2a1f;
+      --muted: #5b6658;
+      --line: #d8e1d3;
+      --brand: #2f7d4a;
+      --brand-strong: #1e5c35;
+      --warn: #d97706;
+      --error: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top right, #e7efe1, #f6f8f4 45%);
+      color: var(--ink);
+      font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .shell {
+      max-width: 1180px;
+      margin: 20px auto 42px;
+      padding: 0 16px;
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all .18s ease;
+    }
+    .btn-primary {
+      background: var(--brand);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--brand-strong); }
+    .btn-lite {
+      background: #fff;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .btn-lite:hover { background: #f0f5ed; }
+    .status {
+      margin: 10px 0 16px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      display: none;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .status.ok { display: block; background: #e9f7ee; color: #1c5f38; border: 1px solid #c7e9d3; }
+    .status.warn { display: block; background: #fff7ed; color: #9a5b04; border: 1px solid #fed7aa; }
+    .status.err { display: block; background: #fef2f2; color: #8b1212; border: 1px solid #fecaca; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 3px 12px rgba(28, 52, 33, .05);
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .hint {
+      margin: -2px 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .two {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 12px;
+    }
+    .three {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px 12px;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid #cfd8c8;
+      border-radius: 9px;
+      padding: 9px 10px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea {
+      min-height: 74px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .rowline {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 10px;
+      font-size: 13px;
+      color: var(--ink);
+    }
+    .toggle input { transform: translateY(1px); }
+    .listen-item {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .listen-item button {
+      background: #fff;
+      color: var(--error);
+      border-color: #fecaca;
+      padding: 9px 10px;
+    }
+    .listen-item button:hover { background: #fff2f2; }
+    .model-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .model-card {
+      border: 1px dashed #ccd8c5;
+      border-radius: 10px;
+      padding: 10px;
+      background: #fbfdf9;
+    }
+    .model-card h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      margin-left: 6px;
+      border: 1px solid #d8e1d3;
+      color: #3f4b3e;
+      background: #f3f7f0;
+    }
+    .mono {
+      font-family: "Consolas", "JetBrains Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: #304030;
+      background: #f8fbf6;
+      border: 1px solid #dbe6d4;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin: 8px 0 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    @media (max-width: 980px) {
+      .two, .three, .model-grid { grid-template-columns: 1fr; }
+      .listen-item { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="top">
+      <div>
+        <div class="title">WxBot 配置中心</div>
+        <div class="sub">本地运行 · 仅作用于当前项目目录</div>
+      </div>
+      <div class="actions">
+        <button id="btnReload" class="btn-lite" type="button">重新加载</button>
+        <button id="btnSave" class="btn-primary" type="button">保存配置</button>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>访问令牌（可选）</h2>
+        <div class="hint">当 `bot_config.exe` 使用 `-auth-token` 或 `-auth-token-file` 启动时，请在此填同一个令牌并点击“应用令牌”。</div>
+        <div class="rowline">
+          <input id="authToken" type="text" placeholder="未配置鉴权可留空" style="max-width:460px;">
+          <button id="btnApplyToken" class="btn-lite" type="button">应用令牌</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>路径信息</h2>
+        <div class="mono" id="pathInfo">加载中...</div>
+      </section>
+
+      <section class="card">
+        <h2>基础运行设置</h2>
+        <div class="two">
+          <div class="field"><label>端口 port</label><input id="port" type="number"></div>
+          <div class="field"><label>最大对话轮数 max_groups</label><input id="max_groups" type="number"></div>
+          <div class="field"><label>消息聚合等待秒数 queue_waiting_time</label><input id="queue_waiting_time" type="number"></div>
+          <div class="field"><label>单对象队列上限 queue_max_messages_per_user</label><input id="queue_max_messages_per_user" type="number"></div>
+          <div class="field"><label>并发 worker 数 queue_worker_concurrency</label><input id="queue_worker_concurrency" type="number"></div>
+          <div class="field">
+            <label>文本命令</label>
+            <div class="rowline">
+              <label class="toggle"><input id="enable_text_commands" type="checkbox">启用</label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>聊天对象配置（重点）</h2>
+        <div class="hint">`nickname` 必须和微信会话名一致；`prompt` 填文件名（不带 `.md`）。建议先用 `default`，再基于 `template_full` 创建专属 Prompt。</div>
+        <div id="listenList"></div>
+        <div class="actions">
+          <button id="btnAddListen" class="btn-lite" type="button">新增聊天对象</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Prompt 文件管理</h2>
+        <div class="three">
+          <div class="field"><label>新 Prompt 名称</label><input id="newPromptName" type="text" placeholder="例如: zachary_companion"></div>
+          <div class="field">
+            <label>模板来源</label>
+            <select id="newPromptTemplate">
+              <option value="template_full">template_full</option>
+              <option value="default">default</option>
+              <option value="blank">空白</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button id="btnCreatePrompt" class="btn-lite" type="button">创建 Prompt</button>
+          </div>
+        </div>
+
+        <div class="two">
+          <div class="field">
+            <label>编辑目标 Prompt</label>
+            <select id="promptEditorSelect"></select>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <div class="rowline">
+              <button id="btnLoadPrompt" class="btn-lite" type="button">加载内容</button>
+              <button id="btnSavePrompt" class="btn-primary" type="button">保存 Prompt</button>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Prompt 内容</label>
+          <textarea id="promptEditor" style="min-height: 260px;"></textarea>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>模型配置</h2>
+        <div class="hint">主模型必须完整。视觉/联网模型可不完整，但对应功能需关闭。API Key 会写入 `config.local.json`。</div>
+        <div class="model-grid">
+          <div class="model-card" data-model="llm">
+            <h3>主模型 <span class="tag">必填</span></h3>
+            <div class="two">
+              <div class="field"><label>provider</label><input data-k="provider" type="text"></div>
+              <div class="field"><label>model</label><input data-k="model" type="text"></div>
+              <div class="field"><label>base_url</label><input data-k="base_url" type="text"></div>
+              <div class="field"><label>api_key</label><input data-k="api_key" type="text"></div>
+              <div class="field"><label>temperature</label><input data-k="temperature" type="number" step="0.1"></div>
+              <div class="field"><label>max_tokens</label><input data-k="max_tokens" type="number"></div>
+              <div class="field"><label>timeout_seconds</label><input data-k="timeout_seconds" type="number"></div>
+            </div>
+          </div>
+
+          <div class="model-card" data-model="assistant_llm">
+            <h3>助手模型 <span class="tag">可选</span></h3>
+            <div class="two">
+              <div class="field"><label>provider</label><input data-k="provider" type="text"></div>
+              <div class="field"><label>model</label><input data-k="model" type="text"></div>
+              <div class="field"><label>base_url</label><input data-k="base_url" type="text"></div>
+              <div class="field"><label>api_key</label><input data-k="api_key" type="text"></div>
+              <div class="field"><label>temperature</label><input data-k="temperature" type="number" step="0.1"></div>
+              <div class="field"><label>max_tokens</label><input data-k="max_tokens" type="number"></div>
+              <div class="field"><label>timeout_seconds</label><input data-k="timeout_seconds" type="number"></div>
+            </div>
+          </div>
+
+          <div class="model-card" data-model="vision_llm">
+            <h3>视觉模型 <span class="tag">图片/表情识别</span></h3>
+            <div class="two">
+              <div class="field"><label>provider</label><input data-k="provider" type="text"></div>
+              <div class="field"><label>model</label><input data-k="model" type="text"></div>
+              <div class="field"><label>base_url</label><input data-k="base_url" type="text"></div>
+              <div class="field"><label>api_key</label><input data-k="api_key" type="text"></div>
+              <div class="field"><label>temperature</label><input data-k="temperature" type="number" step="0.1"></div>
+              <div class="field"><label>max_tokens</label><input data-k="max_tokens" type="number"></div>
+              <div class="field"><label>timeout_seconds</label><input data-k="timeout_seconds" type="number"></div>
+            </div>
+          </div>
+
+          <div class="model-card" data-model="online_llm">
+            <h3>联网模型 <span class="tag">联网问答</span></h3>
+            <div class="two">
+              <div class="field"><label>provider</label><input data-k="provider" type="text"></div>
+              <div class="field"><label>model</label><input data-k="model" type="text"></div>
+              <div class="field"><label>base_url</label><input data-k="base_url" type="text"></div>
+              <div class="field"><label>api_key</label><input data-k="api_key" type="text"></div>
+              <div class="field"><label>temperature</label><input data-k="temperature" type="number" step="0.1"></div>
+              <div class="field"><label>max_tokens</label><input data-k="max_tokens" type="number"></div>
+              <div class="field"><label>timeout_seconds</label><input data-k="timeout_seconds" type="number"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>功能开关与策略</h2>
+        <div class="rowline">
+          <label class="toggle"><input id="vision_enabled" type="checkbox">启用视觉识别</label>
+          <label class="toggle"><input id="online_enabled" type="checkbox">启用联网问答</label>
+          <label class="toggle"><input id="emoji_enabled" type="checkbox">启用表情包发送</label>
+          <label class="toggle"><input id="accept_all" type="checkbox">群聊全部回复</label>
+          <label class="toggle"><input id="enable_at_reply" type="checkbox">群聊@触发</label>
+          <label class="toggle"><input id="enable_keyword_reply" type="checkbox">群聊关键词触发</label>
+        </div>
+        <div class="two" style="margin-top:10px;">
+          <div class="field"><label>群聊关键词（逗号分隔）</label><input id="keyword_list" type="text"></div>
+          <div class="field"><label>群聊回复概率 %</label><input id="response_probability" type="number"></div>
+          <div class="field"><label>表情目录 emoji.dir</label><input id="emoji_dir" type="text"></div>
+          <div class="field"><label>表情发送概率 %</label><input id="send_probability" type="number"></div>
+          <div class="field"><label>视觉提示 image_prompt</label><textarea id="image_prompt"></textarea></div>
+          <div class="field"><label>表情识别提示 emoji_prompt</label><textarea id="emoji_prompt"></textarea></div>
+          <div class="field"><label>联网判断提示 detection_prompt</label><textarea id="detection_prompt"></textarea></div>
+          <div class="field"><label>联网固定提示 fixed_prompt</label><textarea id="fixed_prompt"></textarea></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      promptFiles: [],
+      config: null,
+      botConfigPath: "",
+      localConfigPath: "",
+      promptsDir: "",
+      authToken: ""
+    };
+
+    const statusEl = document.getElementById("status");
+
+    function showStatus(msg, kind = "ok") {
+      statusEl.className = `status ${kind}`;
+      statusEl.textContent = msg;
+    }
+
+    async function api(url, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (state.authToken) {
+        headers.set("X-Bot-Token", state.authToken);
+      }
+      const resp = await fetch(url, { ...options, headers });
+      const text = await resp.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch {}
+      if (!resp.ok) {
+        const reason = data.error || `${resp.status} ${resp.statusText}`;
+        if (resp.status === 401) {
+          throw new Error(`${reason}（请在页面顶部填写正确访问令牌）`);
+        }
+        throw new Error(reason);
+      }
+      return data;
+    }
+
+    function num(v, fallback = 0) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function str(v) {
+      return (v ?? "").toString();
+    }
+
+    function bool(v) {
+      return !!v;
+    }
+
+    function setAuthToken(token, silent = false) {
+      state.authToken = str(token).trim();
+      const el = document.getElementById("authToken");
+      if (el) {
+        el.value = state.authToken;
+      }
+      try {
+        if (state.authToken) {
+          localStorage.setItem("bot_config_auth_token", state.authToken);
+        } else {
+          localStorage.removeItem("bot_config_auth_token");
+        }
+      } catch {}
+      if (!silent) {
+        showStatus(state.authToken ? "访问令牌已应用。" : "已清空访问令牌。", "ok");
+      }
+    }
+
+    function initAuthToken() {
+      let cached = "";
+      try {
+        cached = str(localStorage.getItem("bot_config_auth_token")).trim();
+      } catch {}
+      const queryToken = str(new URLSearchParams(window.location.search).get("token")).trim();
+      if (queryToken) {
+        setAuthToken(queryToken, true);
+        return;
+      }
+      if (cached) {
+        setAuthToken(cached, true);
+      }
+    }
+
+    function setModelBlock(name, model) {
+      const card = document.querySelector(`.model-card[data-model="${name}"]`);
+      if (!card) return;
+      card.querySelector('[data-k="provider"]').value = str(model.provider);
+      card.querySelector('[data-k="base_url"]').value = str(model.base_url);
+      card.querySelector('[data-k="api_key"]').value = str(model.api_key);
+      card.querySelector('[data-k="model"]').value = str(model.model);
+      card.querySelector('[data-k="temperature"]').value = num(model.temperature, 1.0);
+      card.querySelector('[data-k="max_tokens"]').value = num(model.max_tokens, 2000);
+      card.querySelector('[data-k="timeout_seconds"]').value = num(model.timeout_seconds, 45);
+    }
+
+    function getModelBlock(name) {
+      const card = document.querySelector(`.model-card[data-model="${name}"]`);
+      return {
+        provider: str(card.querySelector('[data-k="provider"]').value).trim(),
+        base_url: str(card.querySelector('[data-k="base_url"]').value).trim(),
+        api_key: str(card.querySelector('[data-k="api_key"]').value).trim(),
+        model: str(card.querySelector('[data-k="model"]').value).trim(),
+        temperature: num(card.querySelector('[data-k="temperature"]').value, 1.0),
+        max_tokens: num(card.querySelector('[data-k="max_tokens"]').value, 2000),
+        timeout_seconds: num(card.querySelector('[data-k="timeout_seconds"]').value, 45)
+      };
+    }
+
+    function renderListenList(list = []) {
+      const wrap = document.getElementById("listenList");
+      wrap.innerHTML = "";
+      const rows = list.length ? list : [{ nickname: "", prompt: "default" }];
+      rows.forEach(item => wrap.appendChild(makeListenRow(item.nickname, item.prompt)));
+    }
+
+    function makeListenRow(nickname = "", prompt = "") {
+      const row = document.createElement("div");
+      row.className = "listen-item";
+
+      const nick = document.createElement("input");
+      nick.type = "text";
+      nick.placeholder = "微信聊天对象昵称（精确匹配）";
+      nick.value = nickname;
+
+      const sel = document.createElement("select");
+      state.promptFiles.forEach(p => {
+        const op = document.createElement("option");
+        op.value = p;
+        op.textContent = p;
+        sel.appendChild(op);
+      });
+      if (prompt && !state.promptFiles.includes(prompt)) {
+        const extra = document.createElement("option");
+        extra.value = prompt;
+        extra.textContent = `${prompt} (未找到文件)`;
+        sel.appendChild(extra);
+      }
+      sel.value = prompt || (state.promptFiles[0] || "");
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.textContent = "删除";
+      del.onclick = () => {
+        row.remove();
+      };
+
+      row.appendChild(nick);
+      row.appendChild(sel);
+      row.appendChild(del);
+      return row;
+    }
+
+    function collectListenList() {
+      const out = [];
+      document.querySelectorAll("#listenList .listen-item").forEach(row => {
+        const nickname = row.children[0].value.trim();
+        const prompt = row.children[1].value.trim();
+        if (nickname && prompt) {
+          out.push({ nickname, prompt });
+        }
+      });
+      return out;
+    }
+
+    function fillForm(cfg) {
+      state.config = cfg;
+      document.getElementById("port").value = num(cfg.port, 5000);
+      document.getElementById("max_groups").value = num(cfg.max_groups, 5);
+      document.getElementById("queue_waiting_time").value = num(cfg.queue_waiting_time, 7);
+      document.getElementById("queue_max_messages_per_user").value = num(cfg.queue_max_messages_per_user, 40);
+      document.getElementById("queue_worker_concurrency").value = num(cfg.queue_worker_concurrency, 4);
+      document.getElementById("enable_text_commands").checked = bool(cfg.enable_text_commands);
+
+      document.getElementById("accept_all").checked = bool(cfg.group_policy?.accept_all);
+      document.getElementById("enable_at_reply").checked = bool(cfg.group_policy?.enable_at_reply);
+      document.getElementById("enable_keyword_reply").checked = bool(cfg.group_policy?.enable_keyword_reply);
+      document.getElementById("keyword_list").value = (cfg.group_policy?.keyword_list || []).join(", ");
+      document.getElementById("response_probability").value = num(cfg.group_policy?.response_probability, 100);
+
+      document.getElementById("emoji_enabled").checked = bool(cfg.emoji?.enabled);
+      document.getElementById("emoji_dir").value = str(cfg.emoji?.dir);
+      document.getElementById("send_probability").value = num(cfg.emoji?.send_probability, 25);
+
+      document.getElementById("vision_enabled").checked = bool(cfg.vision?.enabled);
+      document.getElementById("image_prompt").value = str(cfg.vision?.image_prompt);
+      document.getElementById("emoji_prompt").value = str(cfg.vision?.emoji_prompt);
+
+      document.getElementById("online_enabled").checked = bool(cfg.online?.enabled);
+      document.getElementById("detection_prompt").value = str(cfg.online?.detection_prompt);
+      document.getElementById("fixed_prompt").value = str(cfg.online?.fixed_prompt);
+
+      setModelBlock("llm", cfg.llm || {});
+      setModelBlock("assistant_llm", cfg.assistant_llm || {});
+      setModelBlock("vision_llm", cfg.vision_llm || {});
+      setModelBlock("online_llm", cfg.online_llm || {});
+
+      renderListenList(cfg.listen_list || []);
+    }
+
+    function collectConfig() {
+      const keywordList = str(document.getElementById("keyword_list").value)
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      return {
+        port: num(document.getElementById("port").value, 5000),
+        queue_waiting_time: num(document.getElementById("queue_waiting_time").value, 7),
+        queue_max_messages_per_user: num(document.getElementById("queue_max_messages_per_user").value, 40),
+        queue_worker_concurrency: num(document.getElementById("queue_worker_concurrency").value, 4),
+        max_groups: num(document.getElementById("max_groups").value, 5),
+        enable_text_commands: bool(document.getElementById("enable_text_commands").checked),
+        listen_list: collectListenList(),
+        group_policy: {
+          accept_all: bool(document.getElementById("accept_all").checked),
+          enable_at_reply: bool(document.getElementById("enable_at_reply").checked),
+          enable_keyword_reply: bool(document.getElementById("enable_keyword_reply").checked),
+          keyword_list: keywordList,
+          response_probability: num(document.getElementById("response_probability").value, 100)
+        },
+        llm: getModelBlock("llm"),
+        assistant_llm: getModelBlock("assistant_llm"),
+        vision_llm: getModelBlock("vision_llm"),
+        online_llm: getModelBlock("online_llm"),
+        emoji: {
+          enabled: bool(document.getElementById("emoji_enabled").checked),
+          dir: str(document.getElementById("emoji_dir").value).trim(),
+          send_probability: num(document.getElementById("send_probability").value, 25)
+        },
+        vision: {
+          enabled: bool(document.getElementById("vision_enabled").checked),
+          image_prompt: str(document.getElementById("image_prompt").value).trim(),
+          emoji_prompt: str(document.getElementById("emoji_prompt").value).trim()
+        },
+        online: {
+          enabled: bool(document.getElementById("online_enabled").checked),
+          detection_prompt: str(document.getElementById("detection_prompt").value).trim(),
+          fixed_prompt: str(document.getElementById("fixed_prompt").value).trim()
+        }
+      };
+    }
+
+    function updatePromptSelects() {
+      const editorSelect = document.getElementById("promptEditorSelect");
+      const oldValue = editorSelect.value;
+      editorSelect.innerHTML = "";
+      state.promptFiles.forEach(p => {
+        const op = document.createElement("option");
+        op.value = p;
+        op.textContent = p;
+        editorSelect.appendChild(op);
+      });
+      if (oldValue && state.promptFiles.includes(oldValue)) {
+        editorSelect.value = oldValue;
+      }
+
+      const list = collectListenList();
+      renderListenList(list);
+    }
+
+    async function refreshState() {
+      const data = await api("/api/state");
+      state.promptFiles = data.prompt_files || [];
+      state.botConfigPath = data.bot_config_path || "";
+      state.localConfigPath = data.local_config_path || "";
+      state.promptsDir = data.prompts_dir || "";
+      document.getElementById("pathInfo").textContent =
+`config.json: ${state.botConfigPath}
+config.local.json: ${state.localConfigPath}
+prompts/: ${state.promptsDir}`;
+      updatePromptSelects();
+      fillForm(data.config || {});
+    }
+
+    async function saveConfig() {
+      const payload = collectConfig();
+      if (!payload.listen_list.length) {
+        showStatus("请至少配置一个聊天对象（listen_list）。", "warn");
+        return;
+      }
+      try {
+        const resp = await api("/api/config", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const notifyOk = resp.notify_ok !== false;
+        let msg = resp.message || "配置已保存。";
+        if (resp.notify_ok === false && resp.notify_error) {
+          msg += `\n通知详情: ${resp.notify_error}`;
+        }
+        showStatus(msg, notifyOk ? "ok" : "warn");
+        await refreshState();
+      } catch (e) {
+        showStatus(`保存失败：${e.message}`, "err");
+      }
+    }
+
+    async function loadPrompt() {
+      const name = document.getElementById("promptEditorSelect").value;
+      if (!name) {
+        showStatus("请先选择 Prompt 文件。", "warn");
+        return;
+      }
+      try {
+        const data = await api(`/api/prompts/${encodeURIComponent(name)}`);
+        document.getElementById("promptEditor").value = data.content || "";
+        showStatus(`已加载 Prompt: ${name}`, "ok");
+      } catch (e) {
+        showStatus(`加载 Prompt 失败：${e.message}`, "err");
+      }
+    }
+
+    async function savePrompt() {
+      const name = document.getElementById("promptEditorSelect").value;
+      const content = document.getElementById("promptEditor").value;
+      if (!name) {
+        showStatus("请先选择 Prompt 文件。", "warn");
+        return;
+      }
+      try {
+        await api(`/api/prompts/${encodeURIComponent(name)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content })
+        });
+        showStatus(`Prompt 已保存：${name}`, "ok");
+      } catch (e) {
+        showStatus(`保存 Prompt 失败：${e.message}`, "err");
+      }
+    }
+
+    async function createPrompt() {
+      const name = document.getElementById("newPromptName").value.trim();
+      const template = document.getElementById("newPromptTemplate").value;
+      if (!name) {
+        showStatus("请先填写新 Prompt 名称。", "warn");
+        return;
+      }
+      try {
+        await api("/api/prompts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, template })
+        });
+        await refreshState();
+        document.getElementById("promptEditorSelect").value = name;
+        await loadPrompt();
+        showStatus(`Prompt 已创建：${name}（模板：${template}）`, "ok");
+      } catch (e) {
+        showStatus(`创建 Prompt 失败：${e.message}`, "err");
+      }
+    }
+
+    document.getElementById("btnReload").addEventListener("click", async () => {
+      try {
+        await refreshState();
+        showStatus("已重新加载配置。", "ok");
+      } catch (e) {
+        showStatus(`加载失败：${e.message}`, "err");
+      }
+    });
+
+    document.getElementById("btnSave").addEventListener("click", saveConfig);
+    document.getElementById("btnAddListen").addEventListener("click", () => {
+      document.getElementById("listenList").appendChild(makeListenRow("", state.promptFiles[0] || "default"));
+    });
+    document.getElementById("btnCreatePrompt").addEventListener("click", createPrompt);
+    document.getElementById("btnLoadPrompt").addEventListener("click", loadPrompt);
+    document.getElementById("btnSavePrompt").addEventListener("click", savePrompt);
+    document.getElementById("btnApplyToken").addEventListener("click", () => {
+      setAuthToken(document.getElementById("authToken").value);
+    });
+
+    (async () => {
+      try {
+        initAuthToken();
+        await refreshState();
+        showStatus("配置已加载。", "ok");
+      } catch (e) {
+        showStatus(`初始化失败：${e.message}`, "err");
+      }
+    })();
+  </script>
+</body>
+</html>
