@@ -168,16 +168,18 @@ Copy-Item .\prompts\template_full.md .\prompts\zachary_companion.md
 ```json
 "listen_list": [
   { "nickname": "Zachary", "prompt": "default" },
-  { "nickname": "DJ", "prompt": "dj" },
-  { "nickname": "项目群", "prompt": "default_work" }
+  { "nickname": "Alice", "prompt": "alice_companion" },
+  { "nickname": "项目群", "prompt": "team_assistant" }
 ]
 ```
 
 对应文件必须存在：
 
 - `prompts/default.md`
-- `prompts/dj.md`
-- `prompts/default_work.md`
+- `prompts/alice_companion.md`
+- `prompts/team_assistant.md`
+
+建议：后两个文件都由 `prompts/template_full.md` 复制得到并按对象分别填写。
 
 只要缺一个，程序启动会失败。
 
