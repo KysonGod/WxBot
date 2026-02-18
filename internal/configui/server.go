@@ -581,10 +581,20 @@ func setOnline(root map[string]any, v onlineUI) {
 func setModel(root map[string]any, key string, m modelUI, keyOnly bool) {
 	section := ensureSection(root, key)
 	if keyOnly {
+		// Keep local override file focused on sensitive fields only.
+		delete(section, "provider")
+		delete(section, "base_url")
+		delete(section, "model")
+		delete(section, "temperature")
+		delete(section, "max_tokens")
+		delete(section, "timeout_seconds")
 		if strings.TrimSpace(m.APIKey) == "" {
 			delete(section, "api_key")
 		} else {
 			section["api_key"] = strings.TrimSpace(m.APIKey)
+		}
+		if len(section) == 0 {
+			delete(root, key)
 		}
 		return
 	}
@@ -927,10 +937,6 @@ func (s *Server) Start(addr string) error {
 	}
 	s.logger.Printf("config ui listening on http://%s", addr)
 	return http.ListenAndServe(addr, s)
-}
-
-func readBody(r io.Reader) ([]byte, error) {
-	return io.ReadAll(io.LimitReader(r, 2*1024*1024))
 }
 
 func isLoopbackListenAddr(addr string) bool {

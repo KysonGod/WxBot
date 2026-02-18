@@ -35,17 +35,43 @@ go run .\cmd\bot
 
 ```powershell
 cd WxBot
-.\dist\bot.exe
+.\dist\WxBot.exe
 ```
 
-说明：`bot` 默认会开启本地热重载通知端点 `http://127.0.0.1:19091/reload`（仅本机回环可访问）。
+说明：
+- `bot` 默认会开启本地热重载通知端点 `http://127.0.0.1:19091/reload`（仅本机回环可访问）。
+- 启动后会显示显眼的 UI 配置入口提示（`WxBot.exe -open-config-ui` / `WxBot.exe -config-mode ui` / UI 地址）。
 
-## 4. 模型配置
+## 4. 启动时配置检查
 
-- `1` 配置文件模式（`config.json + config.local.json`）
-- `2` 命令行向导模式
+`bot` 会直接尝试启动。  
+在进入运行态前会校验必要配置；如果配置不完整，会提示错误并退出（交互终端下会提示“按任意键退出”）。
 
-### 4.1 配置文件模式
+当检测到配置不完善时，程序会自动尝试打开前端配置界面（默认 `http://127.0.0.1:19090`）。  
+终端会同时提示你也可以直接编辑 `config.json` / `config.local.json`；配置完成后请重启程序。
+
+当配置完整并进入运行态后，程序会默认保持配置界面地址可访问（`http://127.0.0.1:19090`），你可随时手动打开修改。
+
+为避免双击窗口闪退，启动阶段遇到致命错误时会默认等待“按任意键退出”。  
+若你在脚本中运行且不希望等待，可设置：
+
+```powershell
+$env:WECHATBOT_NO_PAUSE="1"
+```
+
+配置可通过以下三种方式维护：
+
+- 配置文件（编辑 `config.json + config.local.json`）
+- 命令行向导（`-config-mode cli`）
+- UI 界面（`WxBot.exe -open-config-ui` 或 `-config-mode ui`）
+
+说明（必要配置不完整时会拒绝启动）：
+
+- 主模型必须完整（`base_url/api_key/model`）
+- `listen_list` 必须至少有一个对象，且 `prompt` 文件存在
+- 校验失败不会启动 bot，会提示你继续修正
+
+### 4.1 配置文件方式
 
 复制并填写本地敏感配置文件：
 
@@ -73,7 +99,7 @@ Copy-Item .\config.local.json.example .\config.local.json
 }
 ```
 
-### 4.2 命令行向导模式（四步）
+### 4.2 命令行向导方式（四步）
 
 四步依次配置：
 
@@ -108,8 +134,26 @@ go run .\cmd\bot -setup-models
 
 ```powershell
 cd WxBot
-.\dist\bot.exe -setup-models
+.\dist\WxBot.exe -setup-models
 ```
+
+### 4.3 UI 配置方式
+
+可直接启动配置界面：
+
+```powershell
+cd WxBot
+.\dist\WxBot.exe -open-config-ui
+```
+
+或通过 `bot` 强制走 UI 配置：
+
+```powershell
+cd WxBot
+.\dist\WxBot.exe -config-mode ui
+```
+
+默认地址：`http://127.0.0.1:19090`
 
 ## 5. 如何设置聊天对象（重点）
 
@@ -168,18 +212,16 @@ Copy-Item .\prompts\template_full.md .\prompts\zachary_companion.md
 ```json
 "listen_list": [
   { "nickname": "Zachary", "prompt": "default" },
-  { "nickname": "Alice", "prompt": "alice_companion" },
-  { "nickname": "项目群", "prompt": "team_assistant" }
+  { "nickname": "DJ", "prompt": "dj" },
+  { "nickname": "项目群", "prompt": "default_work" }
 ]
 ```
 
 对应文件必须存在：
 
 - `prompts/default.md`
-- `prompts/alice_companion.md`
-- `prompts/team_assistant.md`
-
-建议：后两个文件都由 `prompts/template_full.md` 复制得到并按对象分别填写。
+- `prompts/dj.md`
+- `prompts/default_work.md`
 
 只要缺一个，程序启动会失败。
 
@@ -199,42 +241,27 @@ Copy-Item .\prompts\template_full.md .\prompts\zachary_companion.md
 
 ```powershell
 cd WxBot
-go run .\cmd\configui
+.\dist\WxBot.exe -open-config-ui
 ```
 
 浏览器打开：
 
 `http://127.0.0.1:19090`
 
-说明：从 `dist` 目录启动 `bot_config.exe` 时，程序会自动回溯到项目根目录读取 `config.json`。
+说明：从 `dist` 目录启动 `WxBot.exe` 时，程序会自动回溯到项目根目录读取 `config.json`。
 保存配置时，界面会主动通知运行中的 `bot` 立即热重载；若通知失败，也有轮询兜底（约 1 秒内生效）。
-当 `bot_config` 配置了访问令牌时，需要在页面顶部填入同一令牌后再操作。
 
-可选参数：
-
-```powershell
-go run .\cmd\configui -base-dir . -bot-config .\config.json -addr 127.0.0.1:19090
-```
-
-如果你修改了 bot 侧通知地址，可加：
+可选参数（仍然只有一个入口 `WxBot.exe`）：
 
 ```powershell
-go run .\cmd\configui -notify-url http://127.0.0.1:19091/reload
+.\dist\WxBot.exe -open-config-ui -config-ui-addr 127.0.0.1:19090
 ```
 
-如果你要把配置界面暴露到非本机地址，建议开启访问令牌：
+如果你修改了 bot 侧主动热重载地址，可加：
 
 ```powershell
-go run .\cmd\configui -addr 0.0.0.0:19090 -auth-token "your-strong-token"
+.\dist\WxBot.exe -open-config-ui -reload-listen 127.0.0.1:19091
 ```
-
-或使用令牌文件（推荐）：
-
-```powershell
-go run .\cmd\configui -addr 0.0.0.0:19090 -auth-token-file .\configui.token
-```
-
-说明：`bot_config` 在非本地地址监听时，未配置访问令牌会拒绝启动。
 
 ### 6.2 界面里该怎么配（正确顺序）
 
@@ -299,6 +326,24 @@ go run .\cmd\bot -config-mode file
 go run .\cmd\bot -config-mode cli
 ```
 
+强制使用 UI 配置模式：
+
+```powershell
+go run .\cmd\bot -config-mode ui
+```
+
+启动时自动打开配置页面（会尝试启动内置UI服务再打开浏览器）：
+
+```powershell
+go run .\cmd\bot -open-config-ui
+```
+
+修改 `bot` 启动提示中的配置地址（默认 `127.0.0.1:19090`）：
+
+```powershell
+go run .\cmd\bot -config-ui-addr 127.0.0.1:19090
+```
+
 设置主动热重载通知监听地址（默认 `127.0.0.1:19091`）：
 
 ```powershell
@@ -314,31 +359,13 @@ go run .\cmd\bot -setup-models
 构建 EXE：
 
 ```powershell
-go build -o .\dist\bot.exe .\cmd\bot
-```
-
-构建前端配置界面 EXE：
-
-```powershell
-go build -o .\dist\bot_config.exe .\cmd\configui
+go build -o .\dist\WxBot.exe .\cmd\bot
 ```
 
 一键按规范名称构建（推荐）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
-```
-
-启动前端配置界面：
-
-```powershell
-go run .\cmd\configui
-```
-
-使用令牌文件启动前端配置界面：
-
-```powershell
-go run .\cmd\configui -auth-token-file .\configui.token
 ```
 
 ## 9. 常见问题
@@ -354,11 +381,7 @@ go run .\cmd\configui -auth-token-file .\configui.token
    - 确认微信已登录并在前台可访问
    - 确认 Python 环境已安装 `wxauto`
 
-4. 配置界面报错 `未授权：缺少或错误的访问令牌`
-   - `bot_config` 启用了 `-auth-token` 或 `-auth-token-file`
-   - 在配置页面顶部填写同一令牌后再保存/加载
-
-5. 报错 `go-build ... Access is denied`
+4. 报错 `go-build ... Access is denied`
    - 先在当前终端设置项目本地缓存再执行 Go 命令：
    - `$env:GOCACHE="$pwd\\.gocache"`
 
@@ -370,4 +393,3 @@ go run .\cmd\configui -auth-token-file .\configui.token
 - `emojis/`：表情包目录
 - `state/`：运行状态数据
 - `python/wx_bridge.py`：微信桥接脚本
-- `cmd/configui`：前端配置界面入口

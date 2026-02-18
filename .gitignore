@@ -5,3 +5,4 @@ config.local.*.json
 .gocache/
 .idea/
 dist/*.exe
+!dist/WxBot.exe

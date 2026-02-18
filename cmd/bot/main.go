@@ -20,8 +20,10 @@ func main() {
 	pythonExe := flag.String("python", "python", "python executable path")
 	baseDir := flag.String("base-dir", ".", "base directory of standalone bot project")
 	botConfigPath := flag.String("bot-config", "", "path to standalone bot config json (default: <base-dir>/config.json)")
-	configMode := flag.String("config-mode", "auto", "model config source: auto|file|cli")
+	configMode := flag.String("config-mode", "auto", "config source: auto|file|cli|ui")
 	setupModels := flag.Bool("setup-models", false, "run interactive model setup wizard and exit")
+	configUIAddr := flag.String("config-ui-addr", "127.0.0.1:19090", "config ui address hint for setup/modify flow")
+	openConfigUI := flag.Bool("open-config-ui", false, "auto open config ui in browser on startup")
 	reloadListen := flag.String("reload-listen", "127.0.0.1:19091", "local http listen address for active config reload notify (empty to disable)")
 	stateDir := flag.String("state", "", "state directory")
 	promptsDir := flag.String("prompts", "", "prompts directory")
@@ -31,23 +33,32 @@ func main() {
 	logger := applog.New()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	interactive := isInteractiveTerminal()
+	noPauseOnStartupError := strings.EqualFold(strings.TrimSpace(os.Getenv("WECHATBOT_NO_PAUSE")), "1")
+	pauseOnStartupError := func(message string) {
+		if noPauseOnStartupError || !interactive {
+			return
+		}
+		promptAnyKeyToExit(interactive, os.Stdout, message)
+	}
 
 	resolvedBaseDir := resolveBaseDirForExe(*baseDir, *botConfigPath)
 	resolvedBotConfigPath, err := resolveBotConfigPath(resolvedBaseDir, *botConfigPath)
 	if err != nil {
 		logger.Printf("resolve bot config path failed: %v", err)
+		pauseOnStartupError("启动失败，按任意键退出...")
 		return
 	}
-
-	interactive := isInteractiveTerminal()
 
 	if *setupModels {
 		if !interactive {
 			logger.Printf("model setup wizard requires an interactive terminal")
+			pauseOnStartupError("命令行向导需要交互终端，按任意键退出...")
 			return
 		}
 		if err := runModelSetupWizard(resolvedBotConfigPath, os.Stdin, os.Stdout, logger); err != nil {
 			logger.Printf("model setup failed: %v", err)
+			pauseOnStartupError("模型配置失败，按任意键退出...")
 			return
 		}
 		logger.Printf("model setup completed, restart bot to apply")
@@ -57,21 +68,44 @@ func main() {
 	mode, err := chooseConfigSourceMode(*configMode, interactive, os.Stdin, os.Stdout)
 	if err != nil {
 		logger.Printf("invalid config mode: %v", err)
+		pauseOnStartupError("配置模式无效，按任意键退出...")
 		return
 	}
 
-	if mode == configModeCLI {
-		if !interactive {
-			logger.Printf("config-mode=cli requires interactive terminal, fallback to file mode")
-			mode = configModeFile
-		} else {
-			if err := runModelSetupWizard(resolvedBotConfigPath, os.Stdin, os.Stdout, logger); err != nil {
-				logger.Printf("model setup failed: %v", err)
-				return
+	if err := ensureStartupConfigured(ctx, startupSetupOptions{
+		BaseDir:       resolvedBaseDir,
+		BotConfigPath: resolvedBotConfigPath,
+		ConfigMode:    mode,
+		ConfigUIAddr:  *configUIAddr,
+		Interactive:   interactive,
+		In:            os.Stdin,
+		Out:           os.Stdout,
+		Logger:        logger,
+	}); err != nil {
+		logger.Printf("startup configuration failed: %v", err)
+		if shouldAutoOpenConfigUIOnSetupError(err) {
+			logger.Printf("检测到配置不完善")
+			printConfigSetupNotice(os.Stdout, interactive, configUIURL(*configUIAddr))
+			logger.Printf("配置完成后请重启 WxBot")
+			tip := "UI界面配置未完成请勿关闭，否则无法完成配置"
+			logger.Printf("%s", tip)
+			if interactive {
+				logger.Printf("已尝试自动打开前端配置界面")
+				printGreenNotice(os.Stdout, interactive, tip)
+				ensureAndOpenConfigUIOnStartup(ctx, logger, resolvedBaseDir, resolvedBotConfigPath, *configUIAddr, *reloadListen)
+			} else {
+				logger.Printf("skip auto-open config ui: non-interactive terminal")
 			}
+		} else {
+			logger.Printf("startup aborted due to setup error")
 		}
+		if strings.Contains(err.Error(), "main model config is incomplete") {
+			logger.Printf("hint: fill model api_key in config.local.json, use env refs (e.g. env:DEEPSEEK_API_KEY), or run with -config-mode cli/ui")
+			logLocalConfigHint(logger, resolvedBaseDir, resolvedBotConfigPath)
+		}
+		pauseOnStartupError("检测到配置不完善，完成配置后请尝试再次启动，按任意键退出...")
+		return
 	}
-	logger.Printf("config mode selected: %s", mode)
 
 	opts := bootstrap.Options{
 		PythonExe:     *pythonExe,
@@ -85,6 +119,22 @@ func main() {
 	activeReloadCh := startReloadNotifyServer(ctx, logger, *reloadListen)
 	reloadCh := mergeReloadChannels(ctx, pollReloadCh, activeReloadCh)
 	logHotReloadWatchedPaths(logger, resolvedBaseDir, resolvedBotConfigPath)
+	configUIURLOnStartup := ensureConfigUIReachableOnStartup(
+		ctx,
+		logger,
+		resolvedBaseDir,
+		resolvedBotConfigPath,
+		*configUIAddr,
+		*reloadListen,
+	)
+	logger.Printf("config ui available: %s", configUIURLOnStartup)
+	if *openConfigUI {
+		if interactive {
+			openConfigUIInBrowser(logger, configUIURLOnStartup)
+		} else {
+			logger.Printf("skip -open-config-ui: non-interactive terminal")
+		}
+	}
 
 	restartDelay := 2 * time.Second
 	const maxRestartDelay = 20 * time.Second
@@ -192,17 +242,6 @@ func main() {
 	}
 }
 
-func sleepWithContext(ctx context.Context, d time.Duration) bool {
-	timer := time.NewTimer(d)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return false
-	case <-timer.C:
-		return true
-	}
-}
-
 func nextDelay(current, max time.Duration) time.Duration {
 	next := current * 2
 	if next > max {
@@ -277,4 +316,16 @@ func logLocalConfigHint(logger interface{ Printf(string, ...any) }, baseDir, bot
 	} else if os.IsNotExist(statErr) {
 		logger.Printf("hint: local override not found, create %s (copy from config.local.json.example)", localPath)
 	}
+}
+
+func shouldAutoOpenConfigUIOnSetupError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	if msg == "" {
+		return false
+	}
+	return strings.Contains(msg, "load bot config failed") ||
+		strings.Contains(msg, "config check failed after cli setup")
 }

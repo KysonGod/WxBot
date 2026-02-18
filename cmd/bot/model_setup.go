@@ -18,6 +18,7 @@ import (
 const (
 	configModeFile = "file"
 	configModeCLI  = "cli"
+	configModeUI   = "ui"
 )
 
 type modelInput struct {
@@ -28,36 +29,17 @@ type modelInput struct {
 }
 
 func chooseConfigSourceMode(mode string, interactive bool, in io.Reader, out io.Writer) (string, error) {
+	_ = interactive
+	_ = in
+	_ = out
 	normalized := strings.ToLower(strings.TrimSpace(mode))
 	switch normalized {
 	case "", "auto":
-		if !interactive {
-			return configModeFile, nil
-		}
-		reader := bufio.NewReader(in)
-		for {
-			_, _ = fmt.Fprintln(out, "")
-			_, _ = fmt.Fprintln(out, "模型配置方式：")
-			_, _ = fmt.Fprintln(out, "  1) 配置文件（config.json + config.local.json）")
-			_, _ = fmt.Fprintln(out, "  2) 命令行向导（四步配置模型并写入 config.local.json）")
-			choice, err := promptLine(reader, out, "请选择 [1/2，默认1]: ")
-			if err != nil {
-				return "", err
-			}
-			choice = strings.ToLower(strings.TrimSpace(choice))
-			switch choice {
-			case "", "1", "file", "f":
-				return configModeFile, nil
-			case "2", "cli", "c":
-				return configModeCLI, nil
-			default:
-				_, _ = fmt.Fprintln(out, "无效输入，请输入 1 或 2。")
-			}
-		}
-	case configModeFile, configModeCLI:
+		return configModeFile, nil
+	case configModeFile, configModeCLI, configModeUI:
 		return normalized, nil
 	default:
-		return "", fmt.Errorf("invalid -config-mode: %s (allowed: auto|file|cli)", mode)
+		return "", fmt.Errorf("invalid -config-mode: %s (allowed: auto|file|cli|ui)", mode)
 	}
 }
 
